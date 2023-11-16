@@ -1,0 +1,35 @@
+Ideas:
+    - Splitwise Web3
+        1. Enter ENS domain name or wallet address to share with
+        2. Then enter how much you want to split bill by
+            - split evenly
+            - they owe me
+            - I owe them
+            - split by percentages
+
+    - BACKUP
+    - Casino (like Stake.com)
+        - Games:
+            - Poker
+            - Slot machine
+            - Blackjack
+
+    - use chainlink boilerplate contract
+
+    - Frontend:
+        - animations?
+
+Target Bounties:
+Defi & Payments - $22,500
+Web3 Gaming & Dynamic NFTs - $15,000
+Web3 & AI - $15,000
+Tech for Good - $15,000
+Steel Perlot - $15,000
+Avalanche - $25,000
+Polygon - $50,000
+Total - $157,500
+
+Important Links:
+https://chain.link/hackathon
+https://constellation-hackathon.devpost.com/
+https://github.com/sreeduggirala/Uno
