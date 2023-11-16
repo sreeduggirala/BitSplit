@@ -22,6 +22,10 @@ contract SplitwiseStorage {
     }
 
     Group[] public groups;
+
+    event groupFormed(uint256 groupId, address[] members);
+    event expenseMade(uint256 groupId, uint256 cost, address[] debtors);
+    event reimbursed(address debtor, address creditor);
 }
 
 contract Splitwise is SplitwiseStorage {
