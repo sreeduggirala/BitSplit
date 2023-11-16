@@ -25,18 +25,55 @@ contract SplitwiseStorage {
 }
 
 contract Splitwise is SplitwiseStorage {
+    // @notice: Checks if given address is within the group of the given ID
+    // @params: Group ID, an arbitrary wallet address
+    modifier inGroup(uint256 _groupId, address payable _member) {
+        bool isIn;
+        for (uint256 i = 0; i < groups[_groupId].members.length; i++) {
+            if (groups[_groupId].members[i] == _member) {
+                isIn = true;
+                break;
+            }
+        }
+
+        if (isIn == false) {
+            revert("Member is not in group");
+        }
+        _;
+    }
+
     // @notice: Creates new group for tracking IOUs
     // @params: User's wallet addresses or ENS
-    function newGroup(address payable[] memory _members) public {}
+    function newGroup(
+        string memory _groupName,
+        address payable[] memory _members
+    ) public {}
 
     // @notice: Allows users to join pre-existing groups
-    function invite() public {}
+    function invite(uint256 _groupId, address payable _invitee) public {
+        bool isIn;
+        for (uint256 i = 0; i < groups[_groupId].members.length; i++) {
+            if (groups[_groupId].members[i] == _invitee) {
+                isIn = true;
+                revert("Member is already in group");
+            }
+        }
+
+        groups[_groupId].members.push(_invitee);
+    }
 
     // @notice: Creates new IOUs
-    // @params: User's wallet address or ENS
-    function newExpense() public {}
+    function newExpense(
+        uint256 _groupId,
+        string memory _expenseName,
+        uint256 _cost,
+        address payable[] memory _debtors
+    ) public {}
 
     // @notice: Allows users to reimburse group members
-    // @params: User's wallet address or ENS
-    function reimburse() public {}
+    // @params: Group ID, member's wallet address or ENS
+    function reimburse(
+        uint256 _groupId,
+        address payable _creditor
+    ) public inGroup(_groupId, _creditor) {}
 }

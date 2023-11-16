@@ -6,12 +6,14 @@ Ideas:
             - they owe me
             - I owe them
             - split by percentages
+        3. In-app reimbursement (via CCIP)
 
     - BACKUP
     - Casino (like Stake.com)
         - Games:
             - Poker
             - Slot machine
+            - Roulette
             - Blackjack
 
     - use chainlink boilerplate contract
@@ -21,15 +23,12 @@ Ideas:
 
 Target Bounties:
 Defi & Payments - $22,500
-Web3 Gaming & Dynamic NFTs - $15,000
-Web3 & AI - $15,000
+CCIP - 
 Tech for Good - $15,000
-Steel Perlot - $15,000
 Avalanche - $25,000
 Polygon - $50,000
-Total - $157,500
 
 Important Links:
 https://chain.link/hackathon
 https://constellation-hackathon.devpost.com/
-https://github.com/sreeduggirala/Uno
+https://github.com/sreeduggirala/BitSplit
