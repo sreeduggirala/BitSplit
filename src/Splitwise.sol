@@ -23,6 +23,9 @@ contract SplitwiseStorage {
 
     Group[] public groups;
 
+    // @notice: Tracks global user balances
+    mapping(address => uint256) balance;
+
     event groupFormed(uint256 groupId, address[] members);
     event expenseMade(uint256 groupId, uint256 cost, address[] debtors);
     event joinedGroup(uint256 groupId, address member);
@@ -92,5 +95,17 @@ contract Splitwise is SplitwiseStorage {
         );
 
         groups[_groupId].expenses[_expenseId].amountOwed[msg.sender] = 0;
+    }
+
+    function deposit() public payable {
+        balance[msg.sender] += msg.value;
+    }
+
+    function withdraw(uint256 _amount) public {
+        if (balance[msg.sender] < _amount) {
+            revert("Insufficient balance");
+        }
+        balance[msg.sender] -= _amount;
+        payable(msg.sender).transfer(_amount);
     }
 }
