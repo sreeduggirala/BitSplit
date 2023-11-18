@@ -56,9 +56,9 @@ contract Splitwise is SplitwiseStorage {
     // @notice: Allows users to join pre-existing groups
     // @params: Group ID, invitee's wallet address or ENS
     function invite(uint256 _groupId, address payable _invitee) public {
-        if (inGroup(_groupId, msg.sender) == false) {
+        if (inGroup(_groupId, payable(msg.sender)) == false) {
             
-        }  else if (inGroup(_groupId, _invitee) == true) {
+        }  else if (inGroup(_groupId, payable(_invitee)) == true) {
             revert("Member already in group");
         }
 
