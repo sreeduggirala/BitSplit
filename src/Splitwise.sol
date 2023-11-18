@@ -1,5 +1,4 @@
 //SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.19;
 
 contract SplitwiseStorage {
@@ -15,21 +14,19 @@ contract SplitwiseStorage {
 
     // @notice: Groups of users for IOUs
     struct Group {
-        uint256 groupId;
         string groupName;
         address payable[] members;
         Expense[] expenses;
     }
 
-    Group[] public groups;
+    // @notice: Assigns group IDs
+    mapping(uint256 => Group) groups;
+
+    // @notice: Tracks total number of groups (to assign IDs)
+    uint256 internal totalGroups;
 
     // @notice: Tracks global user balances
     mapping(address => uint256) balance;
-
-    event groupFormed(uint256 groupId, address[] members);
-    event expenseMade(uint256 groupId, uint256 cost, address[] debtors);
-    event joinedGroup(uint256 groupId, address member);
-    event reimbursed(address debtor, address creditor);
 }
 
 contract Splitwise is SplitwiseStorage {
@@ -50,15 +47,18 @@ contract Splitwise is SplitwiseStorage {
     }
 
     // @notice: Creates new group for tracking IOUs
-    // @params: User's wallet addresses or ENS
+    // @params: Users' wallet addresses or ENS
     function newGroup(
         string memory _groupName,
         address payable[] memory _members
     ) public {}
 
     // @notice: Allows users to join pre-existing groups
+    // @params: Group ID, invitee's wallet address or ENS
     function invite(uint256 _groupId, address payable _invitee) public {
-        if (inGroup(_groupId, _invitee) == true) {
+        if (inGroup(_groupId, msg.sender) == false) {
+            
+        }  else if (inGroup(_groupId, _invitee) == true) {
             revert("Member already in group");
         }
 
@@ -66,6 +66,7 @@ contract Splitwise is SplitwiseStorage {
     }
 
     // @notice: Creates new IOUs
+    // @params: Group ID, name of expense, magnitude of expense, list of debtors
     function newExpense(
         uint256 _groupId,
         string memory _expenseName,
@@ -83,29 +84,30 @@ contract Splitwise is SplitwiseStorage {
         if (inGroup(_groupId, _creditor) == false) {
             revert("User not in this group");
         } else if (
-            msg.value <
+           balance[msg.sender] <
             groups[_groupId].expenses[_expenseId].amountOwed[msg.sender]
         ) {
             revert("Insufficient amount");
         }
-
-        payable(groups[_groupId].expenses[_expenseId].creditor).transfer(
-            (groups[_groupId].expenses[_expenseId].amountOwed[msg.sender] *
-                98) / 100
-        );
-
+    
+        balance[_creditor] += msg.value;
         groups[_groupId].expenses[_expenseId].amountOwed[msg.sender] = 0;
     }
 
+    // @notice: Allows users to deposit for in-app balances
     function deposit() public payable {
         balance[msg.sender] += msg.value;
     }
 
+    // @notice: Allows users to withdraw in-app balances
+    // @params: Amount to withdraw
     function withdraw(uint256 _amount) public {
-        if (balance[msg.sender] < _amount) {
-            revert("Insufficient balance");
+        if (balance[msg.sender] < _amount || _amount < 0) {
+            revert("Invalid amount");
         }
         balance[msg.sender] -= _amount;
         payable(msg.sender).transfer(_amount);
     }
+
+
 }
