@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 contract SplitwiseStorage {
     // @notice: Expenses
     struct Expense {
-        uint256 expenseId;
         string expenseName;
         uint256 cost;
         address payable creditor;
         address payable[] debtors;
-        mapping(address => uint256) amountOwed;
+        uint256 costSplit;
+        address payable[] paid;
     }
 
     // @notice: Groups of users for IOUs
@@ -20,16 +20,37 @@ contract SplitwiseStorage {
     }
 
     // @notice: Assigns group IDs
-    mapping(uint256 => Group) groups;
+    mapping(uint256 => Group) public groups;
 
     // @notice: Tracks total number of groups (to assign IDs)
     uint256 internal totalGroups;
 
     // @notice: Tracks global user balances
-    mapping(address => uint256) balance;
+    mapping(address => uint256) public balance;
 }
 
 contract Splitwise is SplitwiseStorage {
+    
+    // @notice: Checks if inputted address is not address(0); for singular address
+    // @params: Arbitrary wallet address
+    modifier validAddress (address payable _member) {
+        if (_member == payable(address(0))) {
+            revert("Invalid address");
+        }
+        _;
+    }
+    
+    // @notice: Checks if inputted address is not address(0); for multiple addresses
+    // @params: Arbitrary wallet address
+    modifier validAddresses (address payable[] memory _members) {
+        for(uint256 i = 0; i < _members.length; i++) {
+            if (_members[i] == payable(address(0))) {
+                revert("Invalid address");
+            }
+        }
+        _;
+    }
+
     // @notice: Checks if given address is within the group of the given ID
     // @params: Group ID, an arbitrary wallet address
     function inGroup(
@@ -48,7 +69,7 @@ contract Splitwise is SplitwiseStorage {
 
     // @notice: Creates new group for tracking IOUs
     // @params: Users' wallet addresses or ENS
-    function newGroup(
+    function createGroup(
         string memory _groupName,
         address payable[] memory _members
     ) public {}
@@ -67,7 +88,7 @@ contract Splitwise is SplitwiseStorage {
 
     // @notice: Creates new IOUs
     // @params: Group ID, name of expense, magnitude of expense, list of debtors
-    function newExpense(
+    function createExpense(
         uint256 _groupId,
         string memory _expenseName,
         uint256 _cost,
@@ -84,19 +105,30 @@ contract Splitwise is SplitwiseStorage {
         if (inGroup(_groupId, _creditor) == false) {
             revert("User not in this group");
         } else if (
-           balance[msg.sender] <
-            groups[_groupId].expenses[_expenseId].amountOwed[msg.sender]
+           msg.value <
+            groups[_groupId].expenses[_expenseId].costSplit
         ) {
             revert("Insufficient amount");
         }
     
         balance[_creditor] += msg.value;
-        groups[_groupId].expenses[_expenseId].amountOwed[msg.sender] = 0;
-    }
 
-    // @notice: Allows users to deposit for in-app balances
-    function deposit() public payable {
-        balance[msg.sender] += msg.value;
+        // Adds msg.sender to array of those who paid
+        groups[_groupId].expenses[_expenseId].paid.push(payable(msg.sender));
+
+        // Finds index of msg.sender in debtors array
+        address payable[] memory debtors = groups[_groupId].expenses[_expenseId].debtors;
+        uint256 debtorIndex;
+        for (uint256 i = 0; i < debtors.length; i++) {
+            if (debtors[i] == payable(msg.sender)) {
+                debtorIndex = i;
+                break;
+            }
+        }
+
+        // Deletes msg.sender from debtors array upon repayment
+        groups[_groupId].expenses[_expenseId].debtors[debtorIndex] =  groups[_groupId].expenses[_expenseId].debtors[debtors.length - 1];
+        groups[_groupId].expenses[_expenseId].debtors.pop(); 
     }
 
     // @notice: Allows users to withdraw in-app balances
@@ -108,6 +140,4 @@ contract Splitwise is SplitwiseStorage {
         balance[msg.sender] -= _amount;
         payable(msg.sender).transfer(_amount);
     }
-
-
 }
