@@ -29,8 +29,7 @@ contract SplitwiseStorage {
     mapping(address => uint256) public balance;
 }
 
-contract Splitwise is SplitwiseStorage {
-    
+contract SplitwiseChecker is SplitwiseStorage {
     // @notice: Checks if inputted address is not address(0); for singular address
     // @params: Arbitrary wallet address
     modifier validAddress (address payable _member) {
@@ -67,19 +66,39 @@ contract Splitwise is SplitwiseStorage {
         return isIn;
     }
 
+    // @notice: Checks if given addresses are in the group of the given ID
+    // @params: Group ID, arbitrary wallet addresses
+    function areInGroup(uint256 _groupId, address payable[] memory _members) public {}
+}
+
+contract Splitwise is SplitwiseChecker {
     // @notice: Creates new group for tracking IOUs
     // @params: Users' wallet addresses or ENS
     function createGroup(
         string memory _groupName,
         address payable[] memory _members
-    ) public {}
+    ) public {
+        if (bytes(_groupName).length == 0) {
+            revert("Choose a longer name");
+        } else if (_members.length < 1) {
+            revert("Insufficient group members");
+        }
+
+        Group memory newGroup = Group({
+            groupName: _groupName,
+            members: _members,
+            expenses: new Expense[](0)
+        });
+
+        totalGroups++;
+
+        groups[totalGroups] = newGroup;
+    }
 
     // @notice: Allows users to join pre-existing groups
     // @params: Group ID, invitee's wallet address or ENS
     function invite(uint256 _groupId, address payable _invitee) public {
-        if (inGroup(_groupId, payable(msg.sender)) == false) {
-            
-        }  else if (inGroup(_groupId, payable(_invitee)) == true) {
+        if (inGroup(_groupId, payable(_invitee)) == true) {
             revert("Member already in group");
         }
 
@@ -93,7 +112,26 @@ contract Splitwise is SplitwiseStorage {
         string memory _expenseName,
         uint256 _cost,
         address payable[] memory _debtors
-    ) public {}
+    ) public {
+        if (_groupId < 0 || _cost <= 0) {
+            revert("Invalid group ID and/or cost");
+        } else if (bytes(_expenseName).length == 0) {
+            revert("Choose a longer name");
+        } else if (_debtors.length < 1) {
+            revert("Insufficient debtors");
+        }
+
+        Expense memory newExpense = Expense({
+            expenseName: _expenseName,
+            cost: _cost, 
+            creditor: payable(msg.sender),
+            debtors: _debtors,
+            costSplit: _cost / (_debtors.length + 1),
+            paid: new address payable[](0) 
+        });
+
+        groups[_groupId].expenses.push(newExpense);
+    }
 
     // @notice: Allows users to reimburse group members
     // @params: Group ID, member's wallet address or ENS
