@@ -56,19 +56,38 @@ contract SplitwiseChecker is SplitwiseStorage {
         uint256 _groupId,
         address payable _member
     ) public view returns (bool) {
-        bool isIn;
         for (uint256 i = 0; i < groups[_groupId].members.length; i++) {
             if (groups[_groupId].members[i] == _member) {
-                isIn = true;
+                return true;
             }
         }
-
-        return isIn;
+        return false;
     }
+
+    // Create a mapping to track membership status
+    mapping(address => bool) isInGroup;
 
     // @notice: Checks if given addresses are in the group of the given ID
     // @params: Group ID, arbitrary wallet addresses
-    function areInGroup(uint256 _groupId, address payable[] memory _members) public {}
+    function areInGroup(
+        uint256 _groupId, 
+        address payable[] memory _members
+    ) public returns (bool) {
+        // Populate the mapping with the group's members
+        address payable[] memory groupMembers = groups[_groupId].members;
+        for (uint256 i = 0; i < groupMembers.length; i++) {
+            isInGroup[groupMembers[i]] = true;
+        }
+
+        // Check if all given addresses are in the group
+        for (uint256 j = 0; j < _members.length; j++) {
+            if (!isInGroup[_members[j]]) {
+                return false;
+            }
+        }
+
+        return true; 
+    }
 }
 
 contract Splitwise is SplitwiseChecker {
