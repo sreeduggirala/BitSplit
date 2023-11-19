@@ -103,15 +103,18 @@ contract Splitwise is SplitwiseChecker {
             revert("Insufficient group members");
         }
 
-        Group memory newGroup = Group({
-            groupName: _groupName,
-            members: _members,
-            expenses: new Expense[](0)
-        });
+        // Group memory newGroup = Group({
+        //     groupName: _groupName,
+        //     members: _members,
+        //     expenses: new Expense[](0)
+        // });
 
-        totalGroups++;
+        // totalGroups++;
 
-        groups[totalGroups] = newGroup;
+        // groups[totalGroups] = newGroup;
+        Group storage newGroup = groups[++totalGroups];
+        newGroup.groupName = _groupName;
+        newGroup.members = _members;
     }
 
     // @notice: Allows users to join pre-existing groups
@@ -140,16 +143,22 @@ contract Splitwise is SplitwiseChecker {
             revert("Insufficient debtors");
         }
 
-        Expense memory newExpense = Expense({
-            expenseName: _expenseName,
-            cost: _cost, 
-            creditor: payable(msg.sender),
-            debtors: _debtors,
-            costSplit: _cost / (_debtors.length + 1),
-            paid: new address payable[](0) 
-        });
+        // Expense memory newExpense = Expense({
+        //     expenseName: _expenseName,
+        //     cost: _cost, 
+        //     creditor: payable(msg.sender),
+        //     debtors: _debtors,
+        //     costSplit: _cost / (_debtors.length + 1),
+        //     paid: new address payable[](0) 
+        // });
 
-        groups[_groupId].expenses.push(newExpense);
+        // groups[_groupId].expenses.push(newExpense);
+        Expense storage newExpense = groups[_groupId].expenses.push();
+        newExpense.expenseName = _expenseName;
+        newExpense.cost = _cost;
+        newExpense.creditor = payable(msg.sender);
+        newExpense.debtors = _debtors;
+        newExpense.costSplit = _cost / (_debtors.length + 1);
     }
 
     // @notice: Allows users to reimburse group members
