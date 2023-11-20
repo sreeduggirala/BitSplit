@@ -73,6 +73,8 @@ contract SplitwiseChecker is SplitwiseStorage {
         uint256 _groupId, 
         address payable[] memory _members
     ) public returns (bool) {
+        bool result;
+
         // Populate the mapping with the group's members
         address payable[] memory groupMembers = groups[_groupId].members;
         for (uint256 i = 0; i < groupMembers.length; i++) {
@@ -82,11 +84,17 @@ contract SplitwiseChecker is SplitwiseStorage {
         // Check if all given addresses are in the group
         for (uint256 j = 0; j < _members.length; j++) {
             if (!isInGroup[_members[j]]) {
-                return false;
+                result = false;
             }
         }
 
-        return true; 
+        // Reset isInGroup mapping
+        for (uint256 i = 0; i < groupMembers.length; i++) {
+            isInGroup[groupMembers[i]] = false;
+        }
+
+        result = true;
+        return result; 
     }
 }
 
