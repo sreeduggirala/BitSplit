@@ -64,7 +64,7 @@ contract SplitwiseChecker is SplitwiseStorage {
         return false;
     }
 
-    // Create a mapping to track membership status
+    // @notice: Tracks user's membership status
     mapping(address => bool) isInGroup;
 
     // @notice: Checks if given addresses are in the group of the given ID
@@ -103,15 +103,6 @@ contract Splitwise is SplitwiseChecker {
             revert("Insufficient group members");
         }
 
-        // Group memory newGroup = Group({
-        //     groupName: _groupName,
-        //     members: _members,
-        //     expenses: new Expense[](0)
-        // });
-
-        // totalGroups++;
-
-        // groups[totalGroups] = newGroup;
         Group storage newGroup = groups[++totalGroups];
         newGroup.groupName = _groupName;
         newGroup.members = _members;
@@ -143,16 +134,6 @@ contract Splitwise is SplitwiseChecker {
             revert("Insufficient debtors");
         }
 
-        // Expense memory newExpense = Expense({
-        //     expenseName: _expenseName,
-        //     cost: _cost, 
-        //     creditor: payable(msg.sender),
-        //     debtors: _debtors,
-        //     costSplit: _cost / (_debtors.length + 1),
-        //     paid: new address payable[](0) 
-        // });
-
-        // groups[_groupId].expenses.push(newExpense);
         Expense storage newExpense = groups[_groupId].expenses.push();
         newExpense.expenseName = _expenseName;
         newExpense.cost = _cost;
