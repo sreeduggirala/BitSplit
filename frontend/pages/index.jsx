@@ -3,6 +3,7 @@ import Head from 'next/head';
 import NavBar from '../components/NavBar';
 import CreateGroupModal from '../components/CreateGroupModal';
 import AddFriendModal from '../components/AddFriendModal';
+import Balances from '../components/Balances';
 
 const Home = () => {
 
@@ -53,8 +54,9 @@ const Home = () => {
             </div>
           </div>
           <div className='flex justify-center items-center'>
-            <hr className=" w-[97%] border-blue-500 border-2 rounded-sm"></hr>
+            <hr className=" w-[97%] border-blue-500 border-2 rounded-sm mb-6"></hr>
           </div>
+          <Balances />
         </div>
       </div>
       {showCreateGroupModal ? <CreateGroupModal setShow={setShowCreateGroupModal} handler={handleCreateGroup} /> : null}
