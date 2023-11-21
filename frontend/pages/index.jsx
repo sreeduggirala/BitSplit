@@ -24,8 +24,10 @@ const Home = () => {
     console.log("Friend Address: " + friendAddress);
   };
 
-  const handleAddExpense = () => {
-    console.log("Add Expense");
+  const handleAddExpense = (group, expenseName, expenseAmount) => {
+    console.log("Group: " + group);
+    console.log("Expense Name: " + expenseName);
+    console.log("Expense Amount: " + expenseAmount);
   };
 
   return (
@@ -39,7 +41,7 @@ const Home = () => {
         <link href="/favicon.ico" rel="icon" />
       </Head>
 
-      <div className={' h-screen w-screen bg-blue-200 flex flex-col justify-start items-center ' + ((showCreateGroupModal || showAddFriendModal || showAddExpenseModal) ? 'blur-md' : "")}>
+      <div className={' h-screen w-screen bg-blue-200 flex flex-col justify-start items-center ' + ((showCreateGroupModal || showAddFriendModal || showAddExpenseModal) ? 'blur-md opacity-60' : "")}>
         <NavBar />
         <div className=' w-4/5 h-full flex flex-col justify-start text-sm py-2 rounded-2xl my-4 bg-blue-300'>
           <div className='flex justify-between items-center p-4 px-16'>
@@ -62,7 +64,7 @@ const Home = () => {
           <div className='w-full h-full flex justify-center items-center'>
             <div className=' w-4/5 h-full flex flex-col justify-center items-center'>
               <Balances />
-              <div className='w-full h-full flex justify-center items-center'>
+              <div className='w-full mt-6 h-full flex justify-center items-center'>
                 <div className=' w-1/2 h-full p-4'>
                   <YouOwe />
                 </div>

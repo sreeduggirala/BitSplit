@@ -1,6 +1,5 @@
 import React, {useState, useEffect} from 'react'
 import InputPill from './InputPill'
-import CheckboxList from './CheckboxList'
 
 const AddFriendModal = ({setShow, handler}) => {
 
