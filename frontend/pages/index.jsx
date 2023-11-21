@@ -44,27 +44,27 @@ const Home = () => {
       <div className={' h-screen w-screen bg-blue-200 flex flex-col justify-start items-center ' + ((showCreateGroupModal || showAddFriendModal || showAddExpenseModal) ? 'blur-md opacity-60' : "")}>
         <NavBar />
         <div className=' w-4/5 h-full flex flex-col justify-start text-sm py-2 rounded-2xl my-4 bg-blue-300'>
-          <div className='flex justify-between items-center p-4 px-16'>
+          <div className='flex justify-between items-center p-4 mx-20'>
             <h1 className=' text-4xl font-bold text-left '>Dashboard</h1>
             <div className=' flex'>
-              <button className='bg-blue-500 hover:bg-blue-700 hover:scale-110 text-white font-bold py-2 px-4 rounded-lg mx-2 text-xl transition' onClick={() => setShowCreateGroupModal(true)}>
+              <button className='bg-blue-700 hover:bg-blue-900 hover:scale-110 text-white font-bold py-2 px-4 rounded-lg mx-2 text-xl transition' onClick={() => setShowCreateGroupModal(true)}>
                 Create Group
               </button>
-              <button className='bg-blue-500 hover:bg-blue-700 hover:scale-110 text-white font-bold py-2 px-4 rounded-lg mx-2 text-xl transition' onClick={() => setShowAddFriendModal(true)}>
+              <button className='bg-blue-700 hover:bg-blue-900 hover:scale-110 text-white font-bold py-2 px-4 rounded-lg mx-2 text-xl transition' onClick={() => setShowAddFriendModal(true)}>
                 Add Friend
               </button>
-              <button className='bg-blue-500 hover:bg-blue-700 hover:scale-110 text-white font-bold py-2 px-4 rounded-lg mx-2 text-xl transition' onClick={() => setShowAddExpenseModal(true)}>
+              <button className='bg-blue-700 hover:bg-blue-900 hover:scale-110 text-white font-bold py-2 px-4 rounded-lg mx-2 text-xl transition' onClick={() => setShowAddExpenseModal(true)}>
                 Add Expense
               </button>
             </div>
           </div>
           <div className='flex justify-center items-center'>
-            <hr className=" w-[97%] border-blue-500 border-2 rounded-sm mb-6"></hr>
+            <hr className=" w-full border-blue-900 border-2 rounded-sm "></hr>
           </div>
           <div className='w-full h-full flex justify-center items-center'>
-            <div className=' w-4/5 h-full flex flex-col justify-center items-center'>
+            <div className=' w-full h-full flex flex-col justify-center items-center'>
               <Balances />
-              <div className='w-full mt-6 h-full flex justify-center items-center'>
+              <div className='w-4/5 mt-6 h-full flex justify-center items-center'>
                 <div className=' w-1/2 h-full p-4'>
                   <YouOwe />
                 </div>
