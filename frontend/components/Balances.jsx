@@ -28,7 +28,6 @@ const Balances = () => {
                 <h1 className=' text-2xl py-3 font-semibold underline text-black'>You Are Owed</h1>
                 <p className={'text-2xl  pb-3 font-bold text-green-400 '}>{youAreOwed}</p>
             </div>
-
         </div>
     )
 }

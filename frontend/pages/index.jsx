@@ -3,7 +3,10 @@ import Head from 'next/head';
 import NavBar from '../components/NavBar';
 import CreateGroupModal from '../components/CreateGroupModal';
 import AddFriendModal from '../components/AddFriendModal';
+import AddExpenseModal from '../components/AddExpenseModal';
 import Balances from '../components/Balances';
+import YouOwe from '../components/YouOwe';
+import YouAreOwed from '../components/YouAreOwed';
 
 const Home = () => {
 
@@ -56,7 +59,19 @@ const Home = () => {
           <div className='flex justify-center items-center'>
             <hr className=" w-[97%] border-blue-500 border-2 rounded-sm mb-6"></hr>
           </div>
-          <Balances />
+          <div className='w-full h-full flex justify-center items-center'>
+            <div className=' w-4/5 h-full flex flex-col justify-center items-center'>
+              <Balances />
+              <div className='w-full h-full flex justify-center items-center'>
+                <div className=' w-1/2 h-full p-4'>
+                  <YouOwe />
+                </div>
+                <div className=' w-1/2 h-full p-4'>
+                  <YouAreOwed />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       {showCreateGroupModal ? <CreateGroupModal setShow={setShowCreateGroupModal} handler={handleCreateGroup} /> : null}
