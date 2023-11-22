@@ -4,9 +4,9 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import { IRouterClient } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
-import { OwnerIsCreator } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
+import { OwnerIsCreator } from "lib/chainlink/contracts/src/v0.8/shared/access/OwnerIsCreator.sol";
 import { Client } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
-import { IERC20 } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/token/ERC20/IERC20.sol";
+import { IERC20 } from "lib/chainlink/contracts/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/contracts/token/ERC20/IERC20.sol";
 
 contract BitSplitStorage {
     // @notice: Expenses
