@@ -6,7 +6,6 @@ import { IRouterClient } from "src/node_modules/@chainlink/contracts-ccip/src/v0
 import { OwnerIsCreator } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
 import { Client } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import { IERC20 } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/token/ERC20/IERC20.sol";
-// import "./BitSplitCCIP.sol";
 
 contract BitSplitStorage {
     // @notice: Expenses
