@@ -118,8 +118,8 @@ contract BitSplitChecker is BitSplitStorage {
         return result; 
     }
 
-    event groupCreated(uint256 groupId);
-    event expenseCreated(uint256 groupId, uint256 expenseId, address creditor);
+    event groupCreated(uint256 groupId, address payable[] members);
+    event expenseCreated(uint256 groupId, uint256 expenseId, address creditor, address payable[] debtors);
     event invited(uint256 groupId, address invitee);
     event paid(address from, uint256 amount, address to);
     event withdrew(address user, uint256 amount);
@@ -133,7 +133,7 @@ contract BitSplit is BitSplitChecker, Ownable {
     function createGroup(
         string memory _groupName,
         address payable[] memory _members
-    ) public {
+    ) public validAddresses(_members){
         if (bytes(_groupName).length == 0) {
             revert("Choose a longer name");
         } else if (_members.length < 1) {
@@ -146,12 +146,15 @@ contract BitSplit is BitSplitChecker, Ownable {
         newGroup.members.push(payable(msg.sender));
         totalGroups++;
 
-        emit groupCreated(totalGroups);
+        emit groupCreated(totalGroups, newGroup.members);
     }
 
     // @notice: Allows users to join pre-existing groups
     // @params: Group ID, invitee's wallet address or ENS
-    function invite(uint256 _groupId, address payable _invitee) public {
+    function invite(
+        uint256 _groupId, 
+        address payable _invitee
+    ) public {
         if (inGroup(_groupId, payable(_invitee)) == true) {
             revert("Member already in group");
         }
@@ -167,7 +170,7 @@ contract BitSplit is BitSplitChecker, Ownable {
         string memory _expenseName,
         uint256 _cost,
         address payable[] memory _debtors
-    ) public {
+    ) public validAddresses(_debtors) {
         if (_groupId < 0 || _cost <= 0) {
             revert("Invalid group ID and/or cost");
         } else if (bytes(_expenseName).length == 0) {
@@ -183,26 +186,22 @@ contract BitSplit is BitSplitChecker, Ownable {
         newExpense.debtors = _debtors;
         newExpense.costSplit = _cost / (_debtors.length + 1);
 
-        emit expenseCreated(_groupId, groups[_groupId].expenses.length - 1, payable(msg.sender));
+        emit expenseCreated(_groupId, groups[_groupId].expenses.length - 1, payable(msg.sender), newExpense.debtors);
     }
 
     // @notice: Allows users to reimburse group members
     // @params: Group ID, member's wallet address or ENS
     function pay(
         uint256 _groupId,
-        uint256 _expenseId,
-        address payable _creditor
+        uint256 _expenseId
     ) public payable {
-        if (inGroup(_groupId, _creditor) == false) {
-            revert("User not in this group");
-        } else if (
-           msg.value !=
+        if (msg.value !=
             groups[_groupId].expenses[_expenseId].costSplit
         ) {
             revert("Insufficient amount");
         }
     
-        balance[_creditor] += (msg.value * 98) / 100;
+        balance[groups[_groupId].expenses[_expenseId].creditor] += (msg.value * 98) / 100;
 
 
         // Adds msg.sender to array of those who paid
@@ -221,8 +220,7 @@ contract BitSplit is BitSplitChecker, Ownable {
         // Deletes msg.sender from debtors array upon repayment
         groups[_groupId].expenses[_expenseId].debtors[debtorIndex] =  groups[_groupId].expenses[_expenseId].debtors[debtors.length - 1];
         groups[_groupId].expenses[_expenseId].debtors.pop(); 
-        emit paid(payable(msg.sender), msg.value, payable(_creditor));
-
+        emit paid(payable(msg.sender), msg.value, payable(groups[_groupId].expenses[_expenseId].creditor));
     }
 
     // @notice: Allows users to withdraw in-app balances
@@ -254,10 +252,13 @@ contract BitSplit is BitSplitChecker, Ownable {
 }
 
 contract BitSplitCCIP is OwnerIsCreator {
+
+    // descriptive errors
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); 
     error NothingToWithdraw(); 
     error FailedToWithdrawEth(address owner, address target, uint256 value); 
     error DestinationChainNotAllowlisted(uint64 destinationChainSelector); 
+
     // Event emitted when the tokens are transferred to an account on another chain.
     event TokensTransferred(
         bytes32 indexed messageId, 
@@ -269,7 +270,6 @@ contract BitSplitCCIP is OwnerIsCreator {
         uint256 fees 
     );
     
-
     // Mapping to keep track of allowlisted destination chains.
     mapping(uint64 => bool) public allowlistedChains;
 
@@ -283,6 +283,11 @@ contract BitSplitCCIP is OwnerIsCreator {
     constructor(address _router, address _link) {
         s_router = IRouterClient(_router);
         s_linkToken = IERC20(_link);
+
+        // Hardcodes Polygon Mumbai testnet into allowlistedChains
+        allowlistedChains[12532609583862916517] = true;
+        // Hardcodes Avalanche Fuji testnet into allowlistedChains
+        allowlistedChains[14767482510784806043] = true;
     }
 
     /// @dev Modifier that checks if the chain with the given destinationChainSelector is allowlisted.
@@ -325,8 +330,8 @@ contract BitSplitCCIP is OwnerIsCreator {
         onlyAllowlistedChain(_destinationChainSelector)
         returns (bytes32 messageId)
     {
-        // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
-        //  address(linkToken) means fees are paid in LINK
+        // Create an EVM2AnyMessage struct in memory with necessary information for sending
+        // a cross-chain message address (linkToken) means fees are paid in LINK
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
             _receiver,
             _token,
@@ -339,14 +344,16 @@ contract BitSplitCCIP is OwnerIsCreator {
             _destinationChainSelector,
             evm2AnyMessage
         );
-
-        if (fees > s_linkToken.balanceOf(address(this)))
+        // check if enough fees
+        if (fees > s_linkToken.balanceOf(address(this))) {
             revert NotEnoughBalance(s_linkToken.balanceOf(address(this)), fees);
+        }
 
-        // approve the Router to transfer LINK tokens on contract's behalf. It will spend the fees in LINK
+        // approve the Router to transfer LINK tokens on contract's behalf. 
+        // It will spend the fees in LINK
         s_linkToken.approve(address(s_router), fees);
-
-        // approve the Router to spend tokens on contract's behalf. It will spend the amount of the given token
+        // approve the Router to spend tokens on contract's behalf. 
+        // It will spend the amount of the given token
         IERC20(_token).approve(address(s_router), _amount);
 
         // Send the message through the router and store the returned message ID
@@ -405,11 +412,13 @@ contract BitSplitCCIP is OwnerIsCreator {
             _destinationChainSelector,
             evm2AnyMessage
         );
-
-        if (fees > address(this).balance)
+        // check if enough fees
+        if (fees > address(this).balance) {
             revert NotEnoughBalance(address(this).balance, fees);
+        }
 
-        // approve the Router to spend tokens on contract's behalf. It will spend the amount of the given token
+        // approve the Router to spend tokens on contract's behalf. 
+        // It will spend the amount of the given token
         IERC20(_token).approve(address(s_router), _amount);
 
         // Send the message through the router and store the returned message ID
@@ -478,7 +487,9 @@ contract BitSplitCCIP is OwnerIsCreator {
     /// @dev This function reverts if there are no funds to withdraw or if the transfer fails.
     /// It should only be callable by the owner of the contract.
     /// @param _beneficiary The address to which the Ether should be transferred.
-    function withdraw(address _beneficiary) public onlyOwner {
+    function withdraw(
+        address _beneficiary
+    ) public onlyOwner {
         // Retrieve the balance of this contract
         uint256 amount = address(this).balance;
 
