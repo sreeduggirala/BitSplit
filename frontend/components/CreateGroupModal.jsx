@@ -36,8 +36,8 @@ const CreateGroupModal = ({setShow, handler}) => {
     }
 
     return (
-        <div className="w-full h-full fixed top-0 start-0 z-[60] overflow-x-hidden overflow-y-auto ">
-            <div className="mt-7 opacity-100 duration-500 ease-out transition-all sm:max-w-lg sm:w-full m-3 sm:mx-auto min-h-[calc(100%-3.5rem)] flex items-center">
+        <div className="mt-7 opacity-100 transition-all w-full h-full fixed top-0 start-0 z-[60] overflow-x-hidden overflow-y-auto ">
+            <div className=" sm:max-w-lg sm:w-full m-3 sm:mx-auto min-h-[calc(100%-3.5rem)] flex items-center">
                 <div className="w-full flex flex-col bg-white border shadow-sm rounded-xl ">
                     <div className="flex justify-between items-center py-3 px-4 border-blue-400 border-b-2 border-dotted">
                         <div className='w-7'/>

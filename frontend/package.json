@@ -9,13 +9,19 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@material-tailwind/react": "^2.1.4",
+    "@mui/material": "^5.14.18",
     "@preline/overlay": "^2.0.0",
     "@rainbow-me/rainbowkit": "^1.2.0",
+    "heroicons": "^2.0.18",
     "next": "^13.4.19",
     "preline": "^2.0.0",
     "react": "^18.2.0",
     "react-bootstrap": "^2.9.1",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^6.19.0",
     "tw-elements": "^1.0.0",
     "viem": "~1.16.3",
     "wagmi": "~1.4.3"

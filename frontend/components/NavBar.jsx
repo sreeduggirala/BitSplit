@@ -1,16 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import bitcoinLogo from "../assets/bitcoin.png";
 import Image from "next/image";
 
 const NavBar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleNavbar = () => {
+    setIsOpen(!isOpen);
+  };
+
   return (
-    <header className="flex z-50 w-4/5 justify-center items-center bg-blue-900 text-sm py-2 rounded-b-2xl">
-      <nav
-        className=" w-full mx-auto px-4 sm:flex sm:items-center sm:justify-between"
-        aria-label="Global"
-      >
-        <div className=" flex items-center justify-between">
+    <header className="z-50 w-full bg-blue-900 text-sm py-2 ">
+      <nav className=" flex items-center justify-between mx-8">
+        <div >
           <a
             className="inline-flex items-center gap-x-2 text-xl font-semibold"
             href="/"
@@ -18,60 +21,39 @@ const NavBar = () => {
             <Image src={bitcoinLogo} width={70} height={70} alt={"logo"} />
             <h1 className=" text-5xl font-bold text-yellow-300">BitWise</h1>
           </a>
-
-          <div className="sm:hidden">
-            <button
-              type="button"
-              className="hs-collapse-toggle p-2 inline-flex justify-center items-center gap-x-2 rounded-lg border border-gray-200 bg-white text-gray-800 shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none "
-              data-hs-collapse="#navbar-image-and-text-1"
-              aria-controls="navbar-image-and-text-1"
-              aria-label="Toggle navigation"
-            >
-              <svg
-                className="hs-collapse-open:hidden flex-shrink-0 w-4 h-4"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="3" x2="21" y1="6" y2="6" />
-                <line x1="3" x2="21" y1="12" y2="12" />
-                <line x1="3" x2="21" y1="18" y2="18" />
-              </svg>
-              <svg
-                className="hs-collapse-open:block hidden flex-shrink-0 w-4 h-4"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
-          </div>
         </div>
 
-        <div
-          id="navbar-image-and-text-1"
-          className="hs-collapse hidden overflow-hidden transition-all duration-300 sm:block"
-        >
-          <div className="flex flex-col gap-5 mt-5 sm:flex-row sm:items-center sm:justify-end sm:mt-0 sm:ps-5">
-            
-            <ConnectButton />
-          </div>
+        <div className="block md:hidden">
+          <button
+            onClick={toggleNavbar}
+            className="flex items-center px-3 py-2 border-4 rounded-xl text-yellow-300 border-yellow-300 hover:text-white hover:border-white"
+          >
+            <svg
+              className="fill-current h-6 w-6"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <title>Menu</title>
+              <path
+                fillRule="evenodd"
+                d="M3 5h14a1 1 0 110 2H3a1 1 0 010-2zm0 5h14a1 1 0 110 2H3a1 1 0 010-2zm0 5h14a1 1 0 110 2H3a1 1 0 010-2z"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div className="hidden md:flex md:flex-row  md:ps-5">
+            <ConnectButton chainStatus="icon" />
         </div>
       </nav>
+      <div
+          className={`${
+            isOpen ? "block" : "hidden"
+          } md:hidden my-4 flex justify-center `}
+        >
+            <ConnectButton chainStatus="icon" />
+        </div>
+
     </header>
   );
 };
