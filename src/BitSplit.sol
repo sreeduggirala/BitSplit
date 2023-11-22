@@ -1,7 +1,9 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
-contract SplitwiseStorage {
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract BitSplitStorage {
     // @notice: Expenses
     struct Expense {
         string expenseName;
@@ -12,7 +14,7 @@ contract SplitwiseStorage {
         address payable[] paid;
     }
 
-    // @notice: Groups of users for IOUs
+    // @notice: Groups of users for multi-person IOUs
     struct Group {
         string groupName;
         address payable[] members;
@@ -27,9 +29,24 @@ contract SplitwiseStorage {
 
     // @notice: Tracks global user balances
     mapping(address => uint256) public balance;
+
+        function getGroupName(uint256 _groupId) public view returns (string memory) {
+        return groups[_groupId].groupName;
+    }
+
+    function getGroupMembers(uint256 _groupId) public view returns (address payable[] memory) {
+        return groups[_groupId].members;
+    }
+    
+    function getExpense(uint256 _groupId, uint256 _expenseId) public view returns (Expense memory) {
+        require(_groupId <= totalGroups, "Group does not exist");
+        require(_expenseId <= groups[_groupId].expenses.length, "Expense does not exist");
+
+        return groups[_groupId].expenses[_expenseId];
+    }
 }
 
-contract SplitwiseChecker is SplitwiseStorage {
+contract BitSplitChecker is BitSplitStorage {
     // @notice: Checks if inputted address is not address(0); for singular address
     // @params: Arbitrary wallet address
     modifier validAddress (address payable _member) {
@@ -96,9 +113,17 @@ contract SplitwiseChecker is SplitwiseStorage {
         result = true;
         return result; 
     }
+
+    event groupCreated(uint256 groupId);
+    event expenseCreated(uint256 groupId, uint256 expenseId, address creditor);
+    event invited(uint256 groupId, address invitee);
+    event paid(address from, uint256 amount, address to);
+    event withdrew(address user, uint256 amount);
 }
 
-contract Splitwise is SplitwiseChecker {
+contract BitSplit is BitSplitChecker, Ownable {
+    constructor() Ownable(msg.sender) {}
+    
     // @notice: Creates new group for tracking IOUs
     // @params: Users' wallet addresses or ENS
     function createGroup(
@@ -111,9 +136,13 @@ contract Splitwise is SplitwiseChecker {
             revert("Insufficient group members");
         }
 
-        Group storage newGroup = groups[++totalGroups];
+        Group storage newGroup = groups[totalGroups];
         newGroup.groupName = _groupName;
         newGroup.members = _members;
+        newGroup.members.push(payable(msg.sender));
+        totalGroups++;
+
+        emit groupCreated(totalGroups);
     }
 
     // @notice: Allows users to join pre-existing groups
@@ -124,6 +153,7 @@ contract Splitwise is SplitwiseChecker {
         }
 
         groups[_groupId].members.push(_invitee);
+        emit invited(_groupId, payable(_invitee));
     }
 
     // @notice: Creates new IOUs
@@ -148,11 +178,13 @@ contract Splitwise is SplitwiseChecker {
         newExpense.creditor = payable(msg.sender);
         newExpense.debtors = _debtors;
         newExpense.costSplit = _cost / (_debtors.length + 1);
+
+        emit expenseCreated(_groupId, groups[_groupId].expenses.length - 1, payable(msg.sender));
     }
 
     // @notice: Allows users to reimburse group members
     // @params: Group ID, member's wallet address or ENS
-    function reimburse(
+    function pay(
         uint256 _groupId,
         uint256 _expenseId,
         address payable _creditor
@@ -160,13 +192,14 @@ contract Splitwise is SplitwiseChecker {
         if (inGroup(_groupId, _creditor) == false) {
             revert("User not in this group");
         } else if (
-           msg.value <
+           msg.value !=
             groups[_groupId].expenses[_expenseId].costSplit
         ) {
             revert("Insufficient amount");
         }
     
-        balance[_creditor] += msg.value;
+        balance[_creditor] += (msg.value * 98) / 100;
+
 
         // Adds msg.sender to array of those who paid
         groups[_groupId].expenses[_expenseId].paid.push(payable(msg.sender));
@@ -184,6 +217,8 @@ contract Splitwise is SplitwiseChecker {
         // Deletes msg.sender from debtors array upon repayment
         groups[_groupId].expenses[_expenseId].debtors[debtorIndex] =  groups[_groupId].expenses[_expenseId].debtors[debtors.length - 1];
         groups[_groupId].expenses[_expenseId].debtors.pop(); 
+        emit paid(payable(msg.sender), msg.value, payable(_creditor));
+
     }
 
     // @notice: Allows users to withdraw in-app balances
@@ -194,5 +229,22 @@ contract Splitwise is SplitwiseChecker {
         }
         balance[msg.sender] -= _amount;
         payable(msg.sender).transfer(_amount);
+        emit withdrew(payable(msg.sender), _amount);
+    }
+
+    // @notice: Allows contract owner to withraw platform fees
+    function collectFees() public onlyOwner {
+        if (balance[owner()] == 0) {
+            revert("No available balance");
+        }
+
+        payable(owner()).transfer(balance[owner()]);
+        emit withdrew(payable(owner()), balance[owner()]);
+
+        balance[owner()] = 0;
+    }
+
+    function renounceOwnership() public virtual override onlyOwner {
+        revert("Function disabled");
     }
 }
