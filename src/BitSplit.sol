@@ -6,6 +6,7 @@ import { IRouterClient } from "src/node_modules/@chainlink/contracts-ccip/src/v0
 import { OwnerIsCreator } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
 import { Client } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import { IERC20 } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/token/ERC20/IERC20.sol";
+// import "./BitSplitCCIP.sol";
 
 contract BitSplitStorage {
     // @notice: Expenses
@@ -126,7 +127,12 @@ contract BitSplitChecker is BitSplitStorage {
 }
 
 contract BitSplit is BitSplitChecker, Ownable {
-    constructor() Ownable(msg.sender) {}
+    // instance of the CCIP contract for CCIP function use
+    BitSplitCCIP bitSplitCCIP;
+
+    constructor(address _router, address _link) Ownable(msg.sender) {
+        bitSplitCCIP = new BitSplitCCIP(_router, _link);
+    }
     
     // @notice: Creates new group for tracking IOUs
     // @params: Users' wallet addresses or ENS
@@ -192,17 +198,27 @@ contract BitSplit is BitSplitChecker, Ownable {
     // @notice: Allows users to reimburse group members
     // @params: Group ID, member's wallet address or ENS
     function pay(
+        uint64 _destinationChainSelector,
         uint256 _groupId,
-        uint256 _expenseId
+        uint256 _expenseId,
+        address _token,
+        uint256 _tokenAmount
     ) public payable {
-        if (msg.value !=
-            groups[_groupId].expenses[_expenseId].costSplit
-        ) {
-            revert("Insufficient amount");
+        if (_token == address(0)) {
+            // Handle ETH payment
+            if (msg.value != groups[_groupId].expenses[_expenseId].costSplit) {
+                revert("Insufficient amount");
+            }
+            balance[groups[_groupId].expenses[_expenseId].creditor] += (msg.value * 98) / 100;
+        } else {
+            // Handle cross chain (CCIP) payment
+            bitSplitCCIP.transferTokensPayLINK(
+                _destinationChainSelector,
+                groups[_groupId].expenses[_expenseId].creditor,
+                _token,
+                _tokenAmount
+            );
         }
-    
-        balance[groups[_groupId].expenses[_expenseId].creditor] += (msg.value * 98) / 100;
-
 
         // Adds msg.sender to array of those who paid
         groups[_groupId].expenses[_expenseId].paid.push(payable(msg.sender));
