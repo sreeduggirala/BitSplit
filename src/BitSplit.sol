@@ -2,6 +2,10 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import { IRouterClient } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
+import { OwnerIsCreator } from "lib/chainlink/contracts/src/v0.8/shared/access/OwnerIsCreator.sol";
+import { Client } from "src/node_modules/@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
+import { IERC20 } from "lib/chainlink/contracts/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/contracts/token/ERC20/IERC20.sol";
 
 contract BitSplitStorage {
     // @notice: Expenses
@@ -136,7 +140,221 @@ contract BitSplitChecker is BitSplitStorage {
     event withdrew(address user, uint256 amount);
 }
 
-contract BitSplit is BitSplitChecker, Ownable {
+contract BitSplitCCIP is OwnerIsCreator {
+
+    // descriptive errors
+    error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); 
+    error NothingToWithdraw(); 
+    error FailedToWithdrawEth(address owner, address target, uint256 value); 
+    error DestinationChainNotAllowlisted(uint64 destinationChainSelector); 
+
+    // Event emitted when the tokens are transferred to an account on another chain.
+    event TokensTransferred(
+        bytes32 indexed messageId, 
+        uint64 indexed destinationChainSelector, 
+        address receiver, 
+        address token,
+        uint256 tokenAmount,
+        address feeToken, 
+        uint256 fees 
+    );
+
+    // Mapping to keep track of allowlisted destination chains.
+    mapping(uint64 => bool) public allowlistedChains;
+
+    IRouterClient private s_router;
+
+    IERC20 private s_linkToken;
+
+    /// @notice Constructor initializes the contract with the router address.
+    /// @param _router The address of the router contract.
+    /// @param _link The address of the link contract.
+    constructor(address _router, address _link) {
+        s_router = IRouterClient(_router);
+        s_linkToken = IERC20(_link);
+
+        // Hardcodes Polygon Mumbai testnet into allowlistedChains
+        allowlistedChains[12532609583862916517] = true;
+        // Hardcodes Avalanche Fuji testnet into allowlistedChains
+        allowlistedChains[14767482510784806043] = true;
+    }
+
+    /// @dev Modifier that checks if the chain with the given destinationChainSelector is allowlisted.
+    /// @param _destinationChainSelector The selector of the destination chain.
+    modifier onlyAllowlistedChain(uint64 _destinationChainSelector) {
+        if (!allowlistedChains[_destinationChainSelector])
+            revert DestinationChainNotAllowlisted(_destinationChainSelector);
+        _;
+    }
+
+    /// @dev Updates the allowlist status of a destination chain for transactions.
+    /// @notice This function can only be called by the owner.
+    /// @param _destinationChainSelector The selector of the destination chain to be updated.
+    /// @param allowed The allowlist status to be set for the destination chain.
+    function allowlistDestinationChain(
+        uint64 _destinationChainSelector,
+        bool allowed
+    ) external onlyOwner {
+        allowlistedChains[_destinationChainSelector] = allowed;
+    }
+
+    /// @notice Transfer tokens to receiver on the destination chain.
+    /// @notice pay in LINK.
+    /// @notice the token must be in the list of supported tokens.
+    /// @notice This function can only be called by the owner.
+    /// @dev Assumes your contract has sufficient LINK tokens to pay for the fees.
+    /// @param _destinationChainSelector The identifier (aka selector) for the destination blockchain.
+    /// @param _receiver The address of the recipient on the destination blockchain.
+    /// @param _token token address.
+    /// @param _amount token amount.
+    /// @param _payFeesIn address of what to pay fees in, 0 for ETH, 1 for Link
+    /// @return messageId The ID of the message that was sent.
+    function transferTokensPay(
+        uint64 _destinationChainSelector,
+        address _receiver,
+        address _token,
+        uint256 _amount,
+        uint256 _payFeesIn
+    )
+        external
+        onlyOwner
+        onlyAllowlistedChain(_destinationChainSelector)
+        returns (bytes32 messageId)
+    {
+        address _feePayment = _payFeesIn == 1 ? address(s_linkToken) : address(0);
+        // Create an EVM2AnyMessage struct in memory with necessary information for sending
+        // a cross-chain message address (linkToken) means fees are paid in LINK
+        Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
+            _receiver,
+            _token,
+            _amount,
+            _feePayment
+        );
+
+        // Get the fee required to send the message
+        uint256 fees = s_router.getFee(
+            _destinationChainSelector,
+            evm2AnyMessage
+        );
+        // check if enough fees
+        if (_feePayment == address(s_linkToken)) {
+            if (fees > s_linkToken.balanceOf(address(s_linkToken))) {
+                revert NotEnoughBalance(s_linkToken.balanceOf(address(s_linkToken)), fees);
+            }
+        } else {
+            if (fees > address(0).balance) {
+                revert NotEnoughBalance(address(0).balance, fees);
+            }
+        }
+
+        // approve the Router to transfer LINK tokens on contract's behalf. 
+        // It will spend the fees in LINK
+        s_linkToken.approve(address(s_router), fees);
+        // approve the Router to spend tokens on contract's behalf. 
+        // It will spend the amount of the given token
+        IERC20(_token).approve(address(s_router), _amount);
+
+        // Send the message through the router and store the returned message ID
+        messageId = s_router.ccipSend(
+            _destinationChainSelector,
+            evm2AnyMessage
+        );
+
+        // Emit an event with message details
+        emit TokensTransferred(
+            messageId,
+            _destinationChainSelector,
+            _receiver,
+            _token,
+            _amount,
+            _feePayment,
+            fees
+        );
+
+        // Return the message ID
+        return messageId;
+    }
+
+    /// @notice Construct a CCIP message.
+    /// @dev This function will create an EVM2AnyMessage struct with all the necessary information for tokens transfer.
+    /// @param _receiver The address of the receiver.
+    /// @param _token The token to be transferred.
+    /// @param _amount The amount of the token to be transferred.
+    /// @param _feeTokenAddress The address of the token used for fees. Set address(0) for native gas.
+    /// @return Client.EVM2AnyMessage Returns an EVM2AnyMessage struct which contains information for sending a CCIP message.
+    function _buildCCIPMessage(
+        address _receiver,
+        address _token,
+        uint256 _amount,
+        address _feeTokenAddress
+    ) internal pure returns (Client.EVM2AnyMessage memory) {
+        // Set the token amounts
+        Client.EVMTokenAmount[]
+            memory tokenAmounts = new Client.EVMTokenAmount[](1);
+        tokenAmounts[0] = Client.EVMTokenAmount({
+            token: _token,
+            amount: _amount
+        });
+
+        // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
+        return
+            Client.EVM2AnyMessage({
+                receiver: abi.encode(_receiver), // ABI-encoded receiver address
+                data: "", // No data
+                tokenAmounts: tokenAmounts, // The amount and type of token being transferred
+                extraArgs: Client._argsToBytes(
+                    // Additional arguments, setting gas limit to 0 as we are not sending any data and non-strict sequencing mode
+                    Client.EVMExtraArgsV1({gasLimit: 0, strict: false})
+                ),
+                // Set the feeToken to a feeTokenAddress, indicating specific asset will be used for fees
+                feeToken: _feeTokenAddress
+            });
+    }
+
+    /// @notice Fallback function to allow the contract to receive Ether.
+    /// @dev This function has no function body, making it a default function for receiving Ether.
+    /// It is automatically called when Ether is transferred to the contract without any data.
+    receive() external payable {}
+
+    /// @notice Allows the contract owner to withdraw the entire balance of Ether from the contract.
+    /// @dev This function reverts if there are no funds to withdraw or if the transfer fails.
+    /// It should only be callable by the owner of the contract.
+    /// @param _beneficiary The address to which the Ether should be transferred.
+    function withdraw(
+        address _beneficiary
+    ) public onlyOwner {
+        // Retrieve the balance of this contract
+        uint256 amount = address(this).balance;
+
+        // Revert if there is nothing to withdraw
+        if (amount == 0) revert NothingToWithdraw();
+
+        // Attempt to send the funds, capturing the success status and discarding any return data
+        (bool sent, ) = _beneficiary.call{value: amount}("");
+
+        // Revert if the send failed, with information about the attempted transfer
+        if (!sent) revert FailedToWithdrawEth(msg.sender, _beneficiary, amount);
+    }
+
+    /// @notice Allows the owner of the contract to withdraw all tokens of a specific ERC20 token.
+    /// @dev This function reverts with a 'NothingToWithdraw' error if there are no tokens to withdraw.
+    /// @param _beneficiary The address to which the tokens will be sent.
+    /// @param _token The contract address of the ERC20 token to be withdrawn.
+    function withdrawToken(
+        address _beneficiary,
+        address _token
+    ) public onlyOwner {
+        // Retrieve the balance of this contract
+        uint256 amount = IERC20(_token).balanceOf(address(this));
+
+        // Revert if there is nothing to withdraw
+        if (amount == 0) revert NothingToWithdraw();
+
+        IERC20(_token).transfer(_beneficiary, amount);
+    }
+}
+
+contract BitSplit is BitSplitChecker, Ownable, BitSplitCCIP {
     constructor() Ownable(msg.sender) {}
 
     // @notice: Creates new group for tracking IOUs
@@ -204,15 +422,24 @@ contract BitSplit is BitSplitChecker, Ownable {
 
     // @notice: Allows users to reimburse group members
     // @params: Group ID, member's wallet address or ENS
-    function pay(uint256 _groupId, uint256 _expenseId) public payable {
+    function pay(uint256 _groupId, uint256 _expenseId, uint64 _destinationChainSelector, address _token, uint256 _payFeesIn) public payable {
         if (msg.value != groups[_groupId].expenses[_expenseId].costSplit) {
             revert("Insufficient amount");
         }
 
-        balance[groups[_groupId].expenses[_expenseId].creditor] +=
-            (msg.value * 98) /
-            100;
+        transferTokensPay(
+            _destinationChainSelector,
+            balance[groups[_groupId].expenses[_expenseId].creditor],
+            _token,
+            (msg.value * 98) / 100,
+            _payFeesIn
+        );
 
+        // updates group arrays
+        updateGroup(_groupId, _expenseId);
+    }
+
+    function updateGroup(uint256 _groupId, uint256 _expenseId) public view {
         // Adds msg.sender to array of those who paid
         groups[_groupId].expenses[_expenseId].paid.push(payable(msg.sender));
 
