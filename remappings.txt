@@ -1,6 +1,6 @@
 @openzeppelin/=lib/openzeppelin-contracts/
 @chainlink/=lib/chainlink/contracts/
-@ccip/=lib/ccip/
+@ccip/=lib/ccip
 ds-test/=lib/forge-std/lib/ds-test/src/
 erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/
 forge-std/=lib/forge-std/src/
