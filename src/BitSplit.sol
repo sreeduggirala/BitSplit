@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import { IRouterClient } from "@ccip/contracts/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import { OwnerIsCreator } from "@chainlink/src/v0.8/shared/access/OwnerIsCreator.sol";
-import { Client } from "@ccip/contracts/src/v0.8/ChainlinkClient.sol";
+import { ChainlinkClient } from "@ccip/contracts/src/v0.8/ChainlinkClient.sol";
 import { IERC20 } from "@chainlink/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/contracts/token/ERC20/IERC20.sol";
 
 contract BitSplitStorage {
