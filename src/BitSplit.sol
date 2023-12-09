@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import { IRouterClient } from "@ccip/contracts/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import { OwnerIsCreator } from "@chainlink/src/v0.8/shared/access/OwnerIsCreator.sol";
-import { ChainlinkClient } from "@ccip/contracts/src/v0.8/ChainlinkClient.sol";
+import { Client } from "@ccip/contracts/src/v0.8/ccip/libraries/Client.sol";
 import { IERC20 } from "@chainlink/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/contracts/token/ERC20/IERC20.sol";
 
 contract BitSplitStorage {
@@ -140,8 +140,7 @@ contract BitSplitChecker is BitSplitStorage {
     event withdrew(address user, uint256 amount);
 }
 
-contract BitSplitCCIP is OwnerIsCreator {
-
+contract BitSplitCCIP is Ownable {
     // descriptive errors
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); 
     error NothingToWithdraw(); 
@@ -169,7 +168,7 @@ contract BitSplitCCIP is OwnerIsCreator {
     /// @notice Constructor initializes the contract with the router address.
     /// @param _router The address of the router contract.
     /// @param _link The address of the link contract.
-    constructor(address _router, address _link) {
+    constructor(address _router, address _link) Ownable(msg.sender) {
         s_router = IRouterClient(_router);
         s_linkToken = IERC20(_link);
 
@@ -216,7 +215,7 @@ contract BitSplitCCIP is OwnerIsCreator {
         uint256 _amount,
         uint256 _payFeesIn
     )
-        external
+        public
         onlyOwner
         onlyAllowlistedChain(_destinationChainSelector)
         returns (bytes32 messageId)
@@ -304,7 +303,7 @@ contract BitSplitCCIP is OwnerIsCreator {
                 tokenAmounts: tokenAmounts, // The amount and type of token being transferred
                 extraArgs: Client._argsToBytes(
                     // Additional arguments, setting gas limit to 0 as we are not sending any data and non-strict sequencing mode
-                    Client.EVMExtraArgsV1({gasLimit: 0, strict: false})
+                    Client.EVMExtraArgsV1({gasLimit: 0})
                 ),
                 // Set the feeToken to a feeTokenAddress, indicating specific asset will be used for fees
                 feeToken: _feeTokenAddress
@@ -355,7 +354,7 @@ contract BitSplitCCIP is OwnerIsCreator {
 }
 
 contract BitSplit is BitSplitChecker, Ownable, BitSplitCCIP {
-    constructor() Ownable(msg.sender) {}
+   constructor(address _router, address _link) BitSplitCCIP(_router, _link) {}
 
     // @notice: Creates new group for tracking IOUs
     // @params: Users' wallet addresses or ENS
@@ -429,7 +428,7 @@ contract BitSplit is BitSplitChecker, Ownable, BitSplitCCIP {
 
         transferTokensPay(
             _destinationChainSelector,
-            balance[groups[_groupId].expenses[_expenseId].creditor],
+            groups[_groupId].expenses[_expenseId].creditor,
             _token,
             (msg.value * 98) / 100,
             _payFeesIn
@@ -439,7 +438,7 @@ contract BitSplit is BitSplitChecker, Ownable, BitSplitCCIP {
         updateGroup(_groupId, _expenseId);
     }
 
-    function updateGroup(uint256 _groupId, uint256 _expenseId) public view {
+    function updateGroup(uint256 _groupId, uint256 _expenseId) public payable {
         // Adds msg.sender to array of those who paid
         groups[_groupId].expenses[_expenseId].paid.push(payable(msg.sender));
 
