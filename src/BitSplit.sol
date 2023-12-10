@@ -163,7 +163,9 @@ contract BitSplit is BitSplitChecker, Ownable {
     // @notice: Allows users to join pre-existing groups
     // @params: Group ID, invitee's wallet address or ENS
     function invite(uint256 _groupId, address payable _invitee) public {
-        if (inGroup(_groupId, payable(_invitee)) == true) {
+        if (inGroup(_groupId, payable(msg.sender)) == false) {
+            revert("You are not in this group");
+        } else if (inGroup(_groupId, payable(_invitee)) == true) {
             revert("Member already in group");
         }
 
