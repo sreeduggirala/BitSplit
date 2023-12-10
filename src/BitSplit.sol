@@ -24,6 +24,9 @@ contract BitSplitStorage {
     // @notice: Assigns group IDs
     mapping(uint256 => Group) public groups;
 
+    // @notice: Tracks groups that members are in
+    mapping(address => uint256[]) usersGroups;
+
     // @notice: Tracks total number of groups (to assign IDs)
     uint256 internal totalGroups;
 
@@ -170,6 +173,7 @@ contract BitSplit is BitSplitChecker, Ownable {
         }
 
         groups[_groupId].members.push(_invitee);
+        usersGroups[_invitee].push(_groupId);
         emit invited(_groupId, payable(_invitee));
     }
 
@@ -273,5 +277,9 @@ contract BitSplit is BitSplitChecker, Ownable {
 
     function renounceOwnership() public virtual override onlyOwner {
         revert("Function disabled");
+    }
+
+    function getGroups(address _user) public view returns (uint256[] memory) {
+        return usersGroups[_user];
     }
 }
