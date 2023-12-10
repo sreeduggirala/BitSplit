@@ -233,6 +233,8 @@ contract BitSplit is BitSplitChecker, Ownable {
             _groupId
         ].expenses[_expenseId].debtors[debtors.length - 1];
         groups[_groupId].expenses[_expenseId].debtors.pop();
+        groups[_groupId].expenses[_expenseId].paid.push(payable(msg.sender));
+
         emit paid(
             payable(msg.sender),
             msg.value,
@@ -252,7 +254,7 @@ contract BitSplit is BitSplitChecker, Ownable {
     }
 
     // @notice: Allows contract owner to withraw platform fees
-    function collectFees() public onlyOwner {
+    function collectFees() public {
         if (balance[owner()] == 0) {
             revert("No available balance");
         }
