@@ -9,6 +9,8 @@ contract BitSplitTest is Test {
     uint256 public constant START_BALANCE = 1 ether;
     address payable[] public  users;
     bytes32 internal nextUser = keccak256(abi.encodePacked("user address"));
+    address router = address(0);
+    address link = address(0);
     
     function getNextUserAddress() internal returns (address payable) {
         address payable user = payable(address(uint160(uint256(nextUser))));
@@ -28,7 +30,7 @@ contract BitSplitTest is Test {
 
     function setUp() public {
         users = createUsers(5);
-        bitSplit = new BitSplit();
+        bitSplit = new BitSplit(router, link);
     }
 
     function testCreateGroup() public {
