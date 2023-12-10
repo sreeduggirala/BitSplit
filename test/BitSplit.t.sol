@@ -30,7 +30,7 @@ contract BitSplitTest is Test {
 
     function setUp() public {
         users = createUsers(5);
-        bitSplit = new BitSplit(router, link);
+        bitSplit = new BitSplit();
     }
 
     function testCreateGroup() public {
