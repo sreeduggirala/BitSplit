@@ -213,6 +213,10 @@ contract BitSplit is BitSplitChecker, Ownable {
             (msg.value * 98) /
             100;
 
+        balance[groups[_groupId].expenses[_expenseId].creditor] +=
+            (msg.value * 2) /
+            100;
+
         // Adds msg.sender to array of those who paid
         groups[_groupId].expenses[_expenseId].paid.push(payable(msg.sender));
 
@@ -233,6 +237,8 @@ contract BitSplit is BitSplitChecker, Ownable {
             _groupId
         ].expenses[_expenseId].debtors[debtors.length - 1];
         groups[_groupId].expenses[_expenseId].debtors.pop();
+
+        // Adds msg.sender to array of those who repaid
         groups[_groupId].expenses[_expenseId].paid.push(payable(msg.sender));
 
         emit paid(
