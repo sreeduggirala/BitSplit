@@ -33,7 +33,7 @@ const Home = () => {
   return (
     <div>
       <Head>
-        <title>BitWise</title>
+        <title>BitSplit</title>
         <meta content="SplitWise, but with Crypto." name="description" />
         <link href="/favicon.ico" rel="icon" />
       </Head>
