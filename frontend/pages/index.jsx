@@ -5,8 +5,7 @@ import CreateGroupModal from "../components/CreateGroupModal";
 import AddFriendModal from "../components/AddFriendModal";
 import AddExpenseModal from "../components/AddExpenseModal";
 import Balances from "../components/Balances";
-import YouOwe from "../components/YouOwe";
-import YouAreOwed from "../components/YouAreOwed";
+import InfoBox from "../components/InfoBox";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 
@@ -89,10 +88,7 @@ const Home = () => {
               <Balances />
               <div className="w-full my-6 h-full flex flex-col md:flex-row justify-center items-center">
                 <div className="w-full h-full p-4">
-                  <YouOwe />
-                </div>
-                <div className="w-full h-full p-4">
-                  <YouAreOwed />
+                  <InfoBox />
                 </div>
               </div>
             </div>

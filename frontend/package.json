@@ -15,6 +15,7 @@
     "@mui/material": "^5.14.18",
     "@preline/overlay": "^2.0.0",
     "@rainbow-me/rainbowkit": "^1.2.0",
+    "ethers": "^5.7.2",
     "heroicons": "^2.0.18",
     "next": "^13.4.19",
     "preline": "^2.0.0",
@@ -27,13 +28,13 @@
     "wagmi": "~1.4.3"
   },
   "devDependencies": {
-    "@types/node": "^18.16.12",
-    "@types/react": "^18.2.21",
+    "@types/node": "18.19.3",
+    "@types/react": "18.2.43",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.15.0",
     "eslint-config-next": "^13.4.19",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
-    "typescript": "^5.0.4"
+    "typescript": "5.3.3"
   }
 }
