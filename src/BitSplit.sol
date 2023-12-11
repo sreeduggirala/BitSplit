@@ -27,6 +27,9 @@ contract BitSplitStorage {
     // @notice: Tracks groups that members are in
     mapping(address => uint256[]) usersGroups;
 
+    // @notice: Tracks groups that members are in
+    mapping(address => uint256[]) usersExpenses;
+
     // @notice: Tracks total number of groups (to assign IDs)
     uint256 internal totalGroups;
 
@@ -200,6 +203,12 @@ contract BitSplit is BitSplitChecker, Ownable {
         newExpense.debtors = _debtors;
         newExpense.costSplit = _cost / (_debtors.length + 1);
 
+        for (uint256 i = 0; i < _debtors.length; i++) {
+            usersExpenses[_debtors[i]].push(
+                groups[_groupId].expenses.length - 1
+            );
+        }
+
         emit expenseCreated(
             _groupId,
             groups[_groupId].expenses.length - 1,
@@ -281,5 +290,9 @@ contract BitSplit is BitSplitChecker, Ownable {
 
     function getGroups(address _user) public view returns (uint256[] memory) {
         return usersGroups[_user];
+    }
+
+    function getExpenses(address _user) public view returns (uint256[] memory) {
+        return usersExpenses[_user];
     }
 }
